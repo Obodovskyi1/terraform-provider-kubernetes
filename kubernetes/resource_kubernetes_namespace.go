@@ -21,7 +21,7 @@ import (
 
 func resourceKubernetesNamespace() *schema.Resource {
 	return &schema.Resource{
-		CreateContext: resourceKubernetesNamespaceCreate,
+		CreateContext: resourceKubernetesNamespaceCreateIfNotExists,
 		ReadContext:   resourceKubernetesNamespaceRead,
 		UpdateContext: resourceKubernetesNamespaceUpdate,
 		DeleteContext: resourceKubernetesNamespaceDelete,
