@@ -59,6 +59,35 @@ func resourceKubernetesNamespaceCreate(ctx context.Context, d *schema.ResourceDa
 	return resourceKubernetesNamespaceRead(ctx, d, meta)
 }
 
+func resourceKubernetesNamespaceCreateIfNotExists(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
+	conn, err := meta.(KubeClientsets).MainClientset()
+	if err != nil {
+		return diag.FromErr(err)
+	}
+
+	metadata := expandMetadata(d.Get("metadata").([]interface{}))
+	namespace := api.Namespace{
+		ObjectMeta: metadata,
+	}
+
+	// Check if the namespace already exists
+	_, err = conn.CoreV1().Namespaces().Get(ctx, metadata.Name, metav1.GetOptions{})
+	if err == nil {
+		log.Printf("[INFO] Namespace already exists")
+		d.SetId(metadata.Name)
+	} else {
+		log.Printf("[INFO] Creating new namespace: %#v", namespace)
+		out, err := conn.CoreV1().Namespaces().Create(ctx, &namespace, metav1.CreateOptions{})
+		if err != nil {
+			return diag.FromErr(err)
+		}
+		log.Printf("[INFO] Submitted new namespace: %#v", out)
+		d.SetId(out.Name)
+	}
+
+	return resourceKubernetesNamespaceRead(ctx, d, meta)
+}
+
 func resourceKubernetesNamespaceRead(ctx context.Context, d *schema.ResourceData, meta interface{}) diag.Diagnostics {
 	exists, err := resourceKubernetesNamespaceExists(ctx, d, meta)
 	if err != nil {
